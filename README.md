@@ -3,6 +3,7 @@
 Bot de Telegram para registrar movimientos financieros en Google Sheets a partir de:
 
 - Audios o notas de voz con compras o ingresos narrados.
+- Mensajes de texto manuales.
 - PDFs con estados de cuenta bancarios.
 
 La aplicacion usa:
@@ -18,6 +19,13 @@ La aplicacion usa:
 3. OpenAI transcribe el audio.
 4. Un modelo extrae la estructura del movimiento: monto, concepto, fecha y metodo de pago.
 5. El sistema agrega una fila en Google Sheets.
+
+Para textos manuales:
+
+1. Envias un mensaje como `Coca Cola, 25 pesos`.
+2. OpenAI interpreta el concepto, monto, categoria y metodo de pago.
+3. Si no indicas metodo de pago, el sistema asume `cash`.
+4. El sistema agrega una fila en Google Sheets.
 
 Para PDFs:
 
@@ -85,6 +93,57 @@ Si quieres desplegarlo como servicio siempre activo, puedes usar `webhook`:
 - `TELEGRAM_WEBHOOK_DOMAIN=https://tu-dominio.com`
 - `TELEGRAM_WEBHOOK_PATH=/telegram/webhook`
 
+## Vercel
+
+El proyecto ya esta preparado para despliegue en Vercel con funciones serverless:
+
+- [vercel.json](C:\codex-projects\bot-finanzas-personales\vercel.json) expone `/telegram/webhook` y `/health`
+- [api/telegram-webhook.js](C:\codex-projects\bot-finanzas-personales\api\telegram-webhook.js) recibe los updates de Telegram
+- [api/health.js](C:\codex-projects\bot-finanzas-personales\api\health.js) sirve para validacion basica
+
+### Variables de entorno en Vercel
+
+Configura al menos estas variables en el proyecto:
+
+- `TELEGRAM_BOT_TOKEN`
+- `TELEGRAM_MODE=webhook`
+- `TELEGRAM_WEBHOOK_DOMAIN=https://tu-proyecto.vercel.app`
+- `TELEGRAM_WEBHOOK_PATH=/telegram/webhook`
+- `OPENAI_API_KEY`
+- `OPENAI_TRANSCRIPTION_MODEL`
+- `OPENAI_REASONING_MODEL`
+- `OPENAI_PDF_MODEL`
+- `GOOGLE_SPREADSHEET_ID`
+- `GOOGLE_SHEETS_RANGE`
+- `GOOGLE_SPREADSHEET_URL`
+- `GOOGLE_SERVICE_ACCOUNT_JSON` o `GOOGLE_SERVICE_ACCOUNT_FILE`
+
+### Pasos de despliegue
+
+1. Crea el proyecto en Vercel y conecta este repositorio.
+2. Carga las variables de entorno del archivo `.env.example`.
+3. Despliega a produccion.
+4. Toma tu dominio final, por ejemplo `https://tu-proyecto.vercel.app`.
+5. En BotFather o por API de Telegram, configura el webhook a:
+
+```text
+https://tu-proyecto.vercel.app/telegram/webhook
+```
+
+6. Verifica que esta respondiendo:
+
+```text
+https://tu-proyecto.vercel.app/health
+```
+
+### Ejemplo para registrar el webhook de Telegram
+
+```bash
+curl "https://api.telegram.org/bot<TU_TOKEN>/setWebhook?url=https://tu-proyecto.vercel.app/telegram/webhook"
+```
+
+En produccion sobre Vercel no debes usar `polling`; el modo correcto es `webhook`.
+
 ## OpenAI
 
 La implementacion usa:
@@ -108,6 +167,7 @@ Como compartiste un token en esta conversacion, te recomiendo **rotarlo en BotFa
 ## Suposiciones de esta primera version
 
 - Los audios describen un solo movimiento por mensaje.
+- Los mensajes de texto describen un solo movimiento por mensaje.
 - Los PDFs corresponden a estados de cuenta relativamente bien escaneados o digitales.
 - Los montos se guardan negativos para gastos y positivos para ingresos.
 - Si una fecha no viene clara en el audio, se usa la fecha actual del servidor.

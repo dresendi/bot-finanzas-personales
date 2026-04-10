@@ -64,15 +64,14 @@ export function explainOpenAiError(error) {
   return `Error al llamar OpenAI. Detalle tecnico: ${formatOpenAiError(error)}`;
 }
 
-export async function transcribeAudio(filePath) {
+export async function transcribeAudio(audioBuffer, fileName = "audio.ogg", mimeType = "audio/ogg") {
   return withOpenAiRetry("audio.transcriptions.fetch", async () => {
-    const audioBuffer = fs.readFileSync(filePath);
     const formData = new FormData();
 
     formData.append(
       "file",
-      new Blob([audioBuffer], { type: "audio/ogg" }),
-      path.basename(filePath)
+      new Blob([audioBuffer], { type: mimeType }),
+      path.basename(fileName)
     );
     formData.append("model", appConfig.openAiTranscriptionModel);
     formData.append("language", "es");
@@ -137,9 +136,8 @@ export async function parseTextMovement(messageText) {
   );
 }
 
-export async function extractTransactionsFromPdf(filePath, originalFileName) {
-  const pdfBuffer = fs.readFileSync(filePath);
-  const pdfFile = await toFile(pdfBuffer, originalFileName || path.basename(filePath));
+export async function extractTransactionsFromPdf(pdfBuffer, originalFileName = "statement.pdf") {
+  const pdfFile = await toFile(pdfBuffer, originalFileName);
 
   const uploadedFile = await withOpenAiRetry("files.create.pdf", async () =>
     client.files.create({

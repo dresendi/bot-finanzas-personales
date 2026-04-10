@@ -1,0 +1,20 @@
+{
+  "functions": {
+    "api/telegram-webhook.js": {
+      "maxDuration": 300
+    },
+    "api/health.js": {
+      "maxDuration": 10
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/telegram/webhook",
+      "destination": "/api/telegram-webhook"
+    },
+    {
+      "source": "/health",
+      "destination": "/api/health"
+    }
+  ]
+}

@@ -28,12 +28,17 @@ function normalizeMode(value) {
   return value === "webhook" ? "webhook" : "polling";
 }
 
+const vercelUrl = readOptional("VERCEL_URL");
+
 export const appConfig = {
   nodeEnv: readOptional("NODE_ENV", "development"),
   port: Number(readOptional("PORT", "3000")),
   telegramMode: normalizeMode(readOptional("TELEGRAM_MODE", "polling")),
   telegramBotToken: readRequired("TELEGRAM_BOT_TOKEN"),
-  telegramWebhookDomain: readOptional("TELEGRAM_WEBHOOK_DOMAIN"),
+  telegramWebhookDomain: readOptional(
+    "TELEGRAM_WEBHOOK_DOMAIN",
+    vercelUrl ? `https://${vercelUrl}` : undefined
+  ),
   telegramWebhookPath: readOptional("TELEGRAM_WEBHOOK_PATH", "/telegram/webhook"),
   openAiApiKey: readRequired("OPENAI_API_KEY"),
   openAiTranscriptionModel: readOptional("OPENAI_TRANSCRIPTION_MODEL", "gpt-4o-mini-transcribe"),
@@ -47,7 +52,7 @@ export const appConfig = {
   ),
   googleServiceAccountJson: readOptional("GOOGLE_SERVICE_ACCOUNT_JSON"),
   googleServiceAccountFile: readOptional("GOOGLE_SERVICE_ACCOUNT_FILE"),
-  tempDir: path.join(process.cwd(), ".tmp")
+  vercelUrl
 };
 
 if (!appConfig.googleServiceAccountJson && !appConfig.googleServiceAccountFile) {
