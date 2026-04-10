@@ -5,12 +5,12 @@
   "type": "module",
   "description": "Bot de Telegram para registrar gastos por audio y estados de cuenta PDF en Google Sheets.",
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "node --watch src/index.js",
-    "check": "node --check src/index.js"
+    "start": "node src/local-dev.js",
+    "dev": "node --watch src/local-dev.js",
+    "check": "node --check src/local-dev.js"
   },
   "engines": {
-    "node": ">=20.11.0"
+    "node": "22.x"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
