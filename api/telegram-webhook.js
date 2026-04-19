@@ -19,9 +19,18 @@ export default async function handler(req, res) {
 
     const { createBot } = await import("../src/bot.js");
     const bot = createBot();
-    const callback = bot.webhookCallback();
+    const update = req.body;
 
-    return callback(req, res);
+    if (!update || typeof update !== "object") {
+      res.status(400).json({
+        ok: false,
+        route: "telegram-webhook",
+        error: "Request body vacio o invalido"
+      });
+      return;
+    }
+
+    await bot.handleUpdate(update, res);
   } catch (error) {
     console.error("Error inicializando telegram-webhook:", error);
     res.status(500).json({
