@@ -56,18 +56,46 @@ function getAuth() {
   return auth;
 }
 
+function parseRange(range) {
+  const [sheetName, columns = "A:O"] = range.split("!");
+  const [startColumn, endColumn] = columns.split(":");
+
+  if (!sheetName || !startColumn || !endColumn) {
+    throw new Error(
+      `GOOGLE_SHEETS_RANGE invalido: ${range}. Usa un formato como Movimientos!A:O`
+    );
+  }
+
+  return {
+    sheetName,
+    startColumn,
+    endColumn
+  };
+}
+
 export async function appendRows(rows) {
   if (!rows.length) {
     return { updates: { updatedRows: 0 } };
   }
 
   const sheets = google.sheets({ version: "v4", auth: getAuth() });
+  const parsedRange = parseRange(appConfig.googleSheetsRange);
 
-  const response = await sheets.spreadsheets.values.append({
+  const existingRowsResponse = await sheets.spreadsheets.values.get({
     spreadsheetId: appConfig.googleSpreadsheetId,
-    range: appConfig.googleSheetsRange,
+    range: `${parsedRange.sheetName}!${parsedRange.startColumn}:${parsedRange.startColumn}`
+  });
+
+  const existingRows = existingRowsResponse.data.values ?? [];
+  const nextRowNumber = existingRows.length + 1;
+  const targetRange =
+    `${parsedRange.sheetName}!${parsedRange.startColumn}${nextRowNumber}:` +
+    `${parsedRange.endColumn}${nextRowNumber + rows.length - 1}`;
+
+  const response = await sheets.spreadsheets.values.update({
+    spreadsheetId: appConfig.googleSpreadsheetId,
+    range: targetRange,
     valueInputOption: "USER_ENTERED",
-    insertDataOption: "INSERT_ROWS",
     requestBody: {
       values: rows
     }
