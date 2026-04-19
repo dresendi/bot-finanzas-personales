@@ -46,14 +46,22 @@ function buildAuth() {
   throw new Error("No se encontraron credenciales validas para Google Sheets.");
 }
 
-const auth = buildAuth();
+let auth;
+
+function getAuth() {
+  if (!auth) {
+    auth = buildAuth();
+  }
+
+  return auth;
+}
 
 export async function appendRows(rows) {
   if (!rows.length) {
     return { updates: { updatedRows: 0 } };
   }
 
-  const sheets = google.sheets({ version: "v4", auth });
+  const sheets = google.sheets({ version: "v4", auth: getAuth() });
 
   const response = await sheets.spreadsheets.values.append({
     spreadsheetId: appConfig.googleSpreadsheetId,
