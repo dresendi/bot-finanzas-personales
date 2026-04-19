@@ -5,6 +5,9 @@
     "api/telegram-webhook.js": {
       "maxDuration": 300
     },
+    "api/index.js": {
+      "maxDuration": 10
+    },
     "api/health.js": {
       "maxDuration": 10
     }
