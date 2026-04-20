@@ -150,15 +150,25 @@ function buildDashboardSummaries(rows) {
     ["Ingreso", 0]
   ]);
   const categoryTotals = new Map();
+  const paymentMethodTotals = new Map([
+    ["Credito", 0],
+    ["Efectivo", 0],
+    ["Desconocido", 0]
+  ]);
 
   for (const row of rows) {
     const entry = row[5] ?? "";
     const amount = Math.abs(toNumber(row[3]));
     const category = row[7] ?? "Desconocido";
+    const paymentMethod = row[6] ?? "Desconocido";
 
     if (entry === "Gasto") {
       entryTotals.set("Gasto", (entryTotals.get("Gasto") ?? 0) + amount);
       categoryTotals.set(category, (categoryTotals.get(category) ?? 0) + amount);
+      paymentMethodTotals.set(
+        paymentMethod,
+        (paymentMethodTotals.get(paymentMethod) ?? 0) + amount
+      );
     } else if (entry === "Ingreso") {
       entryTotals.set("Ingreso", (entryTotals.get("Ingreso") ?? 0) + amount);
     }
@@ -176,6 +186,12 @@ function buildDashboardSummaries(rows) {
         category,
         total
       ]))
+    ],
+    paymentMethodRows: [
+      ["Tipo", "Monto"],
+      ["Credito", paymentMethodTotals.get("Credito") ?? 0],
+      ["Efectivo", paymentMethodTotals.get("Efectivo") ?? 0],
+      ["Desconocido", paymentMethodTotals.get("Desconocido") ?? 0]
     ]
   };
 }
@@ -231,10 +247,11 @@ async function syncDashboard(sheets, sourceSheetName) {
 
   const categoryRows =
     summaries.categoryRows.length > 1 ? summaries.categoryRows : [["Categoria", "Monto"], ["Sin datos", 0]];
+  const paymentMethodRows = summaries.paymentMethodRows;
 
   await sheets.spreadsheets.values.clear({
     spreadsheetId: appConfig.googleSpreadsheetId,
-    range: `${dashboardSheetName}!J1:N200`
+    range: `${dashboardSheetName}!J1:Q200`
   });
 
   await sheets.spreadsheets.values.update({
@@ -252,6 +269,15 @@ async function syncDashboard(sheets, sourceSheetName) {
     valueInputOption: "RAW",
     requestBody: {
       values: categoryRows
+    }
+  });
+
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: appConfig.googleSpreadsheetId,
+    range: `${dashboardSheetName}!P1:Q${paymentMethodRows.length}`,
+    valueInputOption: "RAW",
+    requestBody: {
+      values: paymentMethodRows
     }
   });
 
@@ -311,6 +337,32 @@ async function syncDashboard(sheets, sourceSheetName) {
               anchorCell: {
                 sheetId: dashboardSheet.sheetId,
                 rowIndex: 18,
+                columnIndex: 0
+              },
+              offsetXPixels: 20,
+              offsetYPixels: 20,
+              widthPixels: 520,
+              heightPixels: 320
+            }
+          }
+        }
+      }
+    },
+    {
+      addChart: {
+        chart: {
+          spec: buildPieChartSpec({
+            title: "Credito vs Efectivo",
+            sheetId: dashboardSheet.sheetId,
+            domainColumnIndex: 15,
+            seriesColumnIndex: 16,
+            endRowIndex: paymentMethodRows.length
+          }),
+          position: {
+            overlayPosition: {
+              anchorCell: {
+                sheetId: dashboardSheet.sheetId,
+                rowIndex: 36,
                 columnIndex: 0
               },
               offsetXPixels: 20,
