@@ -111,7 +111,7 @@ export async function appendRows(rows) {
   const response = await sheets.spreadsheets.values.update({
     spreadsheetId: appConfig.googleSpreadsheetId,
     range: targetRange,
-    valueInputOption: "USER_ENTERED",
+    valueInputOption: "RAW",
     requestBody: {
       values: rows
     }
