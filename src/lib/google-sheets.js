@@ -74,6 +74,105 @@ function parseRange(range) {
   };
 }
 
+async function getSheetMetadata(sheets, sheetName) {
+  const spreadsheet = await sheets.spreadsheets.get({
+    spreadsheetId: appConfig.googleSpreadsheetId
+  });
+
+  const sheet = spreadsheet.data.sheets?.find(
+    (item) => item.properties?.title === sheetName
+  );
+
+  if (!sheet?.properties?.sheetId && sheet?.properties?.sheetId !== 0) {
+    throw new Error(`No encontre la hoja '${sheetName}' en el spreadsheet.`);
+  }
+
+  return {
+    sheetId: sheet.properties.sheetId
+  };
+}
+
+async function ensureSheetFormatting(sheets, sheetName) {
+  const { sheetId } = await getSheetMetadata(sheets, sheetName);
+
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId: appConfig.googleSpreadsheetId,
+    requestBody: {
+      requests: [
+        {
+          repeatCell: {
+            range: {
+              sheetId,
+              startColumnIndex: 0,
+              endColumnIndex: 1
+            },
+            cell: {
+              userEnteredFormat: {
+                numberFormat: {
+                  type: "TEXT"
+                }
+              }
+            },
+            fields: "userEnteredFormat.numberFormat"
+          }
+        },
+        {
+          repeatCell: {
+            range: {
+              sheetId,
+              startColumnIndex: 1,
+              endColumnIndex: 3
+            },
+            cell: {
+              userEnteredFormat: {
+                numberFormat: {
+                  type: "TEXT"
+                }
+              }
+            },
+            fields: "userEnteredFormat.numberFormat"
+          }
+        },
+        {
+          repeatCell: {
+            range: {
+              sheetId,
+              startColumnIndex: 3,
+              endColumnIndex: 4
+            },
+            cell: {
+              userEnteredFormat: {
+                numberFormat: {
+                  type: "NUMBER",
+                  pattern: "#,##0.##"
+                }
+              }
+            },
+            fields: "userEnteredFormat.numberFormat"
+          }
+        },
+        {
+          repeatCell: {
+            range: {
+              sheetId,
+              startColumnIndex: 4,
+              endColumnIndex: 8
+            },
+            cell: {
+              userEnteredFormat: {
+                numberFormat: {
+                  type: "TEXT"
+                }
+              }
+            },
+            fields: "userEnteredFormat.numberFormat"
+          }
+        }
+      ]
+    }
+  });
+}
+
 export async function appendRows(rows) {
   if (!rows.length) {
     return { updates: { updatedRows: 0 } };
@@ -82,6 +181,8 @@ export async function appendRows(rows) {
   const sheets = google.sheets({ version: "v4", auth: getAuth() });
   const parsedRange = parseRange(appConfig.googleSheetsRange);
   const headers = getSpreadsheetHeaders();
+
+  await ensureSheetFormatting(sheets, parsedRange.sheetName);
 
   const existingRowsResponse = await sheets.spreadsheets.values.get({
     spreadsheetId: appConfig.googleSpreadsheetId,
