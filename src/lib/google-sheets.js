@@ -3,6 +3,7 @@ import fs from "node:fs";
 import { google } from "googleapis";
 
 import { appConfig } from "../config.js";
+import { getSpreadsheetHeaders } from "./movements.js";
 
 function buildAuth() {
   const scopes = ["https://www.googleapis.com/auth/spreadsheets"];
@@ -57,7 +58,7 @@ function getAuth() {
 }
 
 function parseRange(range) {
-  const [sheetName, columns = "A:O"] = range.split("!");
+  const [sheetName, columns = "A:H"] = range.split("!");
   const [startColumn, endColumn] = columns.split(":");
 
   if (!sheetName || !startColumn || !endColumn) {
@@ -80,6 +81,7 @@ export async function appendRows(rows) {
 
   const sheets = google.sheets({ version: "v4", auth: getAuth() });
   const parsedRange = parseRange(appConfig.googleSheetsRange);
+  const headers = getSpreadsheetHeaders();
 
   const existingRowsResponse = await sheets.spreadsheets.values.get({
     spreadsheetId: appConfig.googleSpreadsheetId,
@@ -87,7 +89,21 @@ export async function appendRows(rows) {
   });
 
   const existingRows = existingRowsResponse.data.values ?? [];
-  const nextRowNumber = existingRows.length + 1;
+  let nextRowNumber = existingRows.length + 1;
+
+  if (existingRows.length === 0) {
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: appConfig.googleSpreadsheetId,
+      range: `${parsedRange.sheetName}!${parsedRange.startColumn}1:${parsedRange.endColumn}1`,
+      valueInputOption: "RAW",
+      requestBody: {
+        values: [headers]
+      }
+    });
+
+    nextRowNumber = 2;
+  }
+
   const targetRange =
     `${parsedRange.sheetName}!${parsedRange.startColumn}${nextRowNumber}:` +
     `${parsedRange.endColumn}${nextRowNumber + rows.length - 1}`;
