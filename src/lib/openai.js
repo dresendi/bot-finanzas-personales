@@ -136,6 +136,48 @@ export async function parseTextMovement(messageText) {
   );
 }
 
+export async function parseReceiptImage(imageBuffer, mimeType = "image/jpeg", fileName = "receipt.jpg") {
+  const base64Image = imageBuffer.toString("base64");
+  const dataUrl = `data:${mimeType};base64,${base64Image}`;
+
+  const response = await withOpenAiRetry("responses.parse.receipt_image", async () =>
+    client.responses.parse({
+      model: appConfig.openAiVisionModel,
+      input: [
+        {
+          role: "system",
+          content:
+            "Analiza una imagen de ticket o recibo comercial y extrae un solo movimiento financiero. " +
+            "Devuelve datos estructurados en JSON. Usa fechas ISO YYYY-MM-DD si aparecen claramente. " +
+            "El monto debe ser positivo. Si es un ticket de compra comun, movementType=expense. " +
+            "Asume paymentMethod=cash si la imagen no muestra claramente otro metodo de pago. " +
+            "Infiere categoria util en espanol cuando sea posible."
+        },
+        {
+          role: "user",
+          content: [
+            {
+              type: "input_text",
+              text:
+                `Archivo recibido: ${fileName}\n` +
+                "Extrae el cargo principal del recibo o ticket y normaliza el movimiento."
+            },
+            {
+              type: "input_image",
+              image_url: dataUrl
+            }
+          ]
+        }
+      ],
+      text: {
+        format: zodTextFormat(singleMovementSchema, "single_movement")
+      }
+    })
+  );
+
+  return singleMovementSchema.parse(response.output_parsed);
+}
+
 export async function extractTransactionsFromPdf(pdfBuffer, originalFileName = "statement.pdf") {
   const pdfFile = await toFile(pdfBuffer, originalFileName);
 

@@ -44,6 +44,7 @@ export const appConfig = {
   openAiTranscriptionModel: readOptional("OPENAI_TRANSCRIPTION_MODEL", "gpt-4o-mini-transcribe"),
   openAiReasoningModel: readOptional("OPENAI_REASONING_MODEL", "gpt-4.1-mini"),
   openAiPdfModel: readOptional("OPENAI_PDF_MODEL", "gpt-4.1-mini"),
+  openAiVisionModel: readOptional("OPENAI_VISION_MODEL", "gpt-4.1-mini"),
   googleSpreadsheetId: readRequired("GOOGLE_SPREADSHEET_ID"),
   googleSheetsRange: readOptional("GOOGLE_SHEETS_RANGE", "Movimientos!A:H"),
   googleSpreadsheetUrl: readOptional(
